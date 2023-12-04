@@ -1,0 +1,1111 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "jobs_raw_to_std",
+  "States": {
+    "jobs_raw_to_std": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "1st-lmd-sv-4-pl-devices-restart-counter-dev",
+          "States": {
+            "1st-lmd-sv-4-pl-devices-restart-counter-dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:294826912937:function:lmd-sv-4-pl-devices-restart-counter-dev:$LATEST",
+                "Payload": {
+                  "prefix": "4-pl-devices/trasladospendientes"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "1st-lmd-sv-4-pl-devices-verify-data-availability-dev"
+            },
+            "1st-lmd-sv-4-pl-devices-verify-data-availability-dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:294826912937:function:lmd-sv-4-pl-devices-verify-data-availability-dev:$LATEST",
+                "Payload": {
+                  "bucket_name": "s3-sv-raw-dev-scpro",
+                  "prefix": "4-pl-devices/trasladospendientes"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "Available \"Traslados Pendientes\"?"
+            },
+            "Available \"Traslados Pendientes\"?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Not": {
+                    "Variable": "$.statusCode",
+                    "NumericEquals": 200
+                  },
+                  "Next": "exec-count-1"
+                }
+              ],
+              "Default": "glu_sv_scpro_4_pl_devices_traslados_pendientes_raw_to_std_dev"
+            },
+            "exec-count-1": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.execution_count",
+                  "NumericLessThan": 5,
+                  "Next": "SNS Email Alarm 1"
+                }
+              ],
+              "Default": "SNS Publish - Table Not Found 1"
+            },
+            "SNS Publish - Table Not Found 1": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "TopicArn": "arn:aws:sns:us-east-1:294826912937:4-pl-devices-sv-table-not-found-dev",
+                "Message": {
+                  "message": "trasladospendientes Not Found"
+                }
+              },
+              "Next": "Fail 1"
+            },
+            "SNS Email Alarm 1": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "TopicArn": "arn:aws:sns:us-east-1:294826912937:4-pl-devices-sv-stf-logging-error-dev",
+                "Message.$": "$"
+              },
+              "Next": "Wait 1",
+              "ResultPath": null
+            },
+            "Wait 1": {
+              "Type": "Wait",
+              "Next": "1st-lmd-sv-4-pl-devices-verify-data-availability-dev",
+              "Seconds": 10
+            },
+            "Fail 1": {
+              "Type": "Fail"
+            },
+            "glu_sv_scpro_4_pl_devices_traslados_pendientes_raw_to_std_dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "glu_sv_scpro_4_pl_devices_traslados_pendientes_raw_to_std_dev"
+              },
+              "Next": "Success 1"
+            },
+            "Success 1": {
+              "Type": "Succeed"
+            }
+          }
+        },
+        {
+          "StartAt": "2nd-lmd-sv-4-pl-devices-restart-counter-dev",
+          "States": {
+            "2nd-lmd-sv-4-pl-devices-restart-counter-dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:294826912937:function:lmd-sv-4-pl-devices-restart-counter-dev:$LATEST",
+                "Payload": {
+                  "prefix": "4-pl-devices/trasladosconfirmados"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "2nd-lmd-sv-4-pl-devices-verify-data-availability-dev"
+            },
+            "2nd-lmd-sv-4-pl-devices-verify-data-availability-dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:294826912937:function:lmd-sv-4-pl-devices-verify-data-availability-dev:$LATEST",
+                "Payload": {
+                  "bucket_name": "s3-sv-raw-dev-scpro",
+                  "prefix": "4-pl-devices/trasladosconfirmados"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "Available \"Traslados confirmados\""
+            },
+            "Available \"Traslados confirmados\"": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Not": {
+                    "Variable": "$.statusCode",
+                    "NumericEquals": 200
+                  },
+                  "Next": "exec-count-2"
+                }
+              ],
+              "Default": "glu_sv_scpro_4_pl_devices_traslados_confirmados_raw_to_std_dev"
+            },
+            "exec-count-2": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.execution_count",
+                  "NumericLessThan": 5,
+                  "Next": "SNS Email Alarm 2"
+                }
+              ],
+              "Default": "SNS Publish - Table Not Found 2"
+            },
+            "SNS Publish - Table Not Found 2": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "TopicArn": "arn:aws:sns:us-east-1:294826912937:4-pl-devices-sv-table-not-found-dev",
+                "Message": {
+                  "message": "trasladosconfirmados Not Found"
+                }
+              },
+              "Next": "Fail 2"
+            },
+            "Fail 2": {
+              "Type": "Fail"
+            },
+            "Wait 2": {
+              "Type": "Wait",
+              "Seconds": 1800,
+              "Next": "2nd-lmd-sv-4-pl-devices-verify-data-availability-dev"
+            },
+            "glu_sv_scpro_4_pl_devices_traslados_confirmados_raw_to_std_dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "glu_sv_scpro_4_pl_devices_traslados_confirmados_raw_to_std_dev"
+              },
+              "Next": "Success 2"
+            },
+            "Success 2": {
+              "Type": "Succeed"
+            },
+            "SNS Email Alarm 2": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "Message.$": "$",
+                "TopicArn": "arn:aws:sns:us-east-1:294826912937:4-pl-devices-sv-stf-logging-error-dev"
+              },
+              "Next": "Wait 2"
+            }
+          }
+        },
+        {
+          "StartAt": "3rd-lmd-sv-4-pl-devices-restart-counter-dev",
+          "States": {
+            "3rd-lmd-sv-4-pl-devices-restart-counter-dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:294826912937:function:lmd-sv-4-pl-devices-restart-counter-dev:$LATEST",
+                "Payload": {
+                  "prefix": "4-pl-devices/libreutilizacion"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "3rd-lmd-sv-4-pl-devices-verify-data-availability-dev"
+            },
+            "3rd-lmd-sv-4-pl-devices-verify-data-availability-dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:294826912937:function:lmd-sv-4-pl-devices-verify-data-availability-dev:$LATEST",
+                "Payload": {
+                  "bucket_name": "s3-sv-raw-dev-scpro",
+                  "prefix": "4-pl-devices/libreutilizacion"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "Available \"Libre Utilizacion\""
+            },
+            "Available \"Libre Utilizacion\"": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Not": {
+                    "Variable": "$.statusCode",
+                    "NumericEquals": 200
+                  },
+                  "Next": "exec-count-3"
+                }
+              ],
+              "Default": "glu_sv_scpro_4_pl_devices_libre_utilizacion_raw_to_std_dev"
+            },
+            "exec-count-3": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.execution_count",
+                  "NumericLessThan": 5,
+                  "Next": "SNS Email Alarm 3"
+                }
+              ],
+              "Default": "SNS Publish - Table Not Found 3"
+            },
+            "Fail 3": {
+              "Type": "Fail"
+            },
+            "SNS Publish - Table Not Found 3": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "TopicArn": "arn:aws:sns:us-east-1:294826912937:4-pl-devices-sv-table-not-found-dev",
+                "Message": {
+                  "message": "libreutilizacion Not Found"
+                }
+              },
+              "Next": "Fail 3"
+            },
+            "Wait 3": {
+              "Type": "Wait",
+              "Seconds": 1800,
+              "Next": "3rd-lmd-sv-4-pl-devices-verify-data-availability-dev"
+            },
+            "glu_sv_scpro_4_pl_devices_libre_utilizacion_raw_to_std_dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "glu_sv_scpro_4_pl_devices_libre_utilizacion_raw_to_std_dev"
+              },
+              "Next": "Success 3"
+            },
+            "Success 3": {
+              "Type": "Succeed"
+            },
+            "SNS Email Alarm 3": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "TopicArn": "arn:aws:sns:us-east-1:294826912937:4-pl-devices-sv-stf-logging-error-dev",
+                "Message.$": "$"
+              },
+              "Next": "Wait 3"
+            }
+          }
+        },
+        {
+          "StartAt": "4th-lmd-sv-4-pl-devices-restart-counter-dev",
+          "States": {
+            "4th-lmd-sv-4-pl-devices-restart-counter-dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:294826912937:function:lmd-sv-4-pl-devices-restart-counter-dev:$LATEST",
+                "Payload": {
+                  "prefix": "4-pl-devices/facturacioncomercial"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "4th-lmd-sv-4-pl-devices-verify-data-availability-dev"
+            },
+            "4th-lmd-sv-4-pl-devices-verify-data-availability-dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:294826912937:function:lmd-sv-4-pl-devices-verify-data-availability-dev:$LATEST",
+                "Payload": {
+                  "bucket_name": "s3-sv-raw-dev-scpro",
+                  "prefix": "4-pl-devices/facturacioncomercial"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "Available \"Facturacion Comercial\""
+            },
+            "Available \"Facturacion Comercial\"": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Not": {
+                    "Variable": "$.statusCode",
+                    "NumericEquals": 200
+                  },
+                  "Next": "exec-count-4"
+                }
+              ],
+              "Default": "glu_sv_scpro_4_pl_devices_facturacion_comercial_raw_to_std_dev"
+            },
+            "exec-count-4": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.execution_count",
+                  "NumericLessThan": 5,
+                  "Next": "SNS Publish - Email Alarm 4"
+                }
+              ],
+              "Default": "SNS Publis - Table Not Found 4"
+            },
+            "Fail 4": {
+              "Type": "Fail"
+            },
+            "SNS Publis - Table Not Found 4": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "TopicArn": "arn:aws:sns:us-east-1:294826912937:4-pl-devices-sv-table-not-found-dev",
+                "Message": {
+                  "message": "facturacioncomercial Not Found"
+                }
+              },
+              "Next": "Fail 4"
+            },
+            "Wait 4": {
+              "Type": "Wait",
+              "Seconds": 1800,
+              "Next": "4th-lmd-sv-4-pl-devices-verify-data-availability-dev"
+            },
+            "glu_sv_scpro_4_pl_devices_facturacion_comercial_raw_to_std_dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "glu_sv_scpro_4_pl_devices_facturacion_comercial_raw_to_std_dev"
+              },
+              "Next": "Success 4"
+            },
+            "Success 4": {
+              "Type": "Succeed"
+            },
+            "SNS Publish - Email Alarm 4": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "TopicArn": "arn:aws:sns:us-east-1:294826912937:4-pl-devices-sv-stf-logging-error-dev",
+                "Message.$": "$"
+              },
+              "Next": "Wait 4"
+            }
+          }
+        },
+        {
+          "StartAt": "5th-lmd-sv-4-pl-devices-restart-counter-dev",
+          "States": {
+            "5th-lmd-sv-4-pl-devices-restart-counter-dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:294826912937:function:lmd-sv-4-pl-devices-restart-counter-dev:$LATEST",
+                "Payload": {
+                  "prefix": "4-pl-devices/activacionesdiarias"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "5th-lmd-sv-4-pl-devices-verify-data-availability-dev"
+            },
+            "5th-lmd-sv-4-pl-devices-verify-data-availability-dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:294826912937:function:lmd-sv-4-pl-devices-verify-data-availability-dev:$LATEST",
+                "Payload": {
+                  "bucket_name": "s3-sv-raw-dev-scpro",
+                  "prefix": "4-pl-devices/activacionesdiarias"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "Available \"Activaciones Diarias\""
+            },
+            "Available \"Activaciones Diarias\"": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Not": {
+                    "Variable": "$.statusCode",
+                    "NumericEquals": 200
+                  },
+                  "Next": "exec-count-5"
+                }
+              ],
+              "Default": "glu_sv_scpro_4_pl_devices_activaciones_diarias_raw_to_std_dev"
+            },
+            "exec-count-5": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.execution_count",
+                  "NumericLessThan": 5,
+                  "Next": "SNS Publish - Email Alarm 5"
+                }
+              ],
+              "Default": "SNS Email Alarm - Table Not Found 5"
+            },
+            "Fail 5": {
+              "Type": "Fail"
+            },
+            "SNS Email Alarm - Table Not Found 5": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "TopicArn": "arn:aws:sns:us-east-1:294826912937:4-pl-devices-sv-table-not-found-dev",
+                "Message": {
+                  "message": "activacionesdiarias Not Found"
+                }
+              },
+              "Next": "Fail 5"
+            },
+            "Wait 5": {
+              "Type": "Wait",
+              "Seconds": 1800,
+              "Next": "5th-lmd-sv-4-pl-devices-verify-data-availability-dev"
+            },
+            "glu_sv_scpro_4_pl_devices_activaciones_diarias_raw_to_std_dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "glu_sv_scpro_4_pl_devices_activaciones_diarias_raw_to_std_dev"
+              },
+              "Next": "Success 5"
+            },
+            "Success 5": {
+              "Type": "Succeed"
+            },
+            "SNS Publish - Email Alarm 5": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "TopicArn": "arn:aws:sns:us-east-1:294826912937:4-pl-devices-sv-stf-logging-error-dev",
+                "Message.$": "$"
+              },
+              "Next": "Wait 5"
+            }
+          }
+        },
+        {
+          "StartAt": "6th-lmd-sv-4-pl-devices-restart-counter-dev",
+          "States": {
+            "6th-lmd-sv-4-pl-devices-restart-counter-dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:294826912937:function:lmd-sv-4-pl-devices-restart-counter-dev:$LATEST",
+                "Payload": {
+                  "prefix": "4-pl-devices/facturaciondealer"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "6th-lmd-sv-4-pl-devices-verify-data-availability-dev"
+            },
+            "6th-lmd-sv-4-pl-devices-verify-data-availability-dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:294826912937:function:lmd-sv-4-pl-devices-verify-data-availability-dev:$LATEST",
+                "Payload": {
+                  "bucket_name": "s3-sv-raw-dev-scpro",
+                  "prefix": "4-pl-devices/facturaciondealer"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "Available \"Facturacion Dealer\""
+            },
+            "Available \"Facturacion Dealer\"": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Not": {
+                    "Variable": "$.statusCode",
+                    "NumericEquals": 200
+                  },
+                  "Next": "exec-count-6"
+                }
+              ],
+              "Default": "glu_sv_scpro_4_pl_devices_facturacion_dealers_raw_to_std_dev"
+            },
+            "exec-count-6": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.execution_count",
+                  "NumericLessThan": 5,
+                  "Next": "SNS Publish - Email Alarm 6"
+                }
+              ],
+              "Default": "SNS Table Not Found 6"
+            },
+            "Fail 6": {
+              "Type": "Fail"
+            },
+            "SNS Table Not Found 6": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "TopicArn": "arn:aws:sns:us-east-1:294826912937:4-pl-devices-sv-table-not-found-dev",
+                "Message": {
+                  "message": "facturaciondealer Not Found"
+                }
+              },
+              "Next": "Fail 6"
+            },
+            "Wait 6": {
+              "Type": "Wait",
+              "Seconds": 1800,
+              "Next": "6th-lmd-sv-4-pl-devices-verify-data-availability-dev"
+            },
+            "glu_sv_scpro_4_pl_devices_facturacion_dealers_raw_to_std_dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "glu_sv_scpro_4_pl_devices_facturacion_dealers_raw_to_std_dev"
+              },
+              "Next": "Success 6"
+            },
+            "Success 6": {
+              "Type": "Succeed"
+            },
+            "SNS Publish - Email Alarm 6": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "TopicArn": "arn:aws:sns:us-east-1:294826912937:4-pl-devices-sv-stf-logging-error-dev",
+                "Message.$": "$"
+              },
+              "Next": "Wait 6"
+            }
+          }
+        },
+        {
+          "StartAt": "7th-lmd-sv-4-pl-devices-restart-counter-dev",
+          "States": {
+            "7th-lmd-sv-4-pl-devices-restart-counter-dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:294826912937:function:lmd-sv-4-pl-devices-restart-counter-dev:$LATEST",
+                "Payload": {
+                  "prefix": "4-pl-devices/inventario"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "7th-lmd-sv-4-pl-devices-verify-data-availability-dev"
+            },
+            "7th-lmd-sv-4-pl-devices-verify-data-availability-dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:294826912937:function:lmd-sv-4-pl-devices-verify-data-availability-dev:$LATEST",
+                "Payload": {
+                  "bucket_name": "s3-sv-raw-dev-scpro",
+                  "prefix": "4-pl-devices/inventario"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "Available \"Inventario\""
+            },
+            "Available \"Inventario\"": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Not": {
+                    "Variable": "$.statusCode",
+                    "NumericEquals": 200
+                  },
+                  "Next": "exec-count-7"
+                }
+              ],
+              "Default": "glu_sv_scpro_4_pl_devices_inventario_raw_to_std_dev"
+            },
+            "exec-count-7": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.execution_count",
+                  "NumericLessThan": 5,
+                  "Next": "SNS Publish - Email Alarm 7"
+                }
+              ],
+              "Default": "SNS Table Not Found 7"
+            },
+            "Fail 7": {
+              "Type": "Fail"
+            },
+            "SNS Table Not Found 7": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "TopicArn": "arn:aws:sns:us-east-1:294826912937:4-pl-devices-sv-table-not-found-dev",
+                "Message": {
+                  "message": "inventario Not Found"
+                }
+              },
+              "Next": "Fail 7"
+            },
+            "Wait 7": {
+              "Type": "Wait",
+              "Seconds": 1800,
+              "Next": "7th-lmd-sv-4-pl-devices-verify-data-availability-dev"
+            },
+            "glu_sv_scpro_4_pl_devices_inventario_raw_to_std_dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": " glu_sv_scpro_4_pl_devices_inventario_raw_to_std_dev"
+              },
+              "Next": "Success 7"
+            },
+            "Success 7": {
+              "Type": "Succeed"
+            },
+            "SNS Publish - Email Alarm 7": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "TopicArn": "arn:aws:sns:us-east-1:294826912937:4-pl-devices-sv-stf-logging-error-dev",
+                "Message.$": "$"
+              },
+              "Next": "Wait 7"
+            }
+          }
+        },
+        {
+          "StartAt": "8th-lmd-sv-4-pl-devices-restart-counter-dev",
+          "States": {
+            "8th-lmd-sv-4-pl-devices-restart-counter-dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:294826912937:function:lmd-sv-4-pl-devices-restart-counter-dev:$LATEST",
+                "Payload": {
+                  "prefix": "4-pl-devices/ingresos"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "8th-lmd-sv-4-pl-devices-verify-data-availability-dev"
+            },
+            "8th-lmd-sv-4-pl-devices-verify-data-availability-dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:us-east-1:294826912937:function:lmd-sv-4-pl-devices-verify-data-availability-dev:$LATEST",
+                "Payload": {
+                  "bucket_name": "s3-sv-raw-dev-scpro",
+                  "prefix": "4-pl-devices/ingresos"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "Available \"Ingresos\""
+            },
+            "Available \"Ingresos\"": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Not": {
+                    "Variable": "$.statusCode",
+                    "NumericEquals": 200
+                  },
+                  "Next": "exec-count-8"
+                }
+              ],
+              "Default": "glu_sv_scpro_4_pl_ingresos_raw_to_std_dev"
+            },
+            "exec-count-8": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.execution_count",
+                  "NumericLessThan": 5,
+                  "Next": "SNS Publish - Email Alarm 8"
+                }
+              ],
+              "Default": "SNS Table Not Found 8"
+            },
+            "Fail 8": {
+              "Type": "Fail"
+            },
+            "SNS Table Not Found 8": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "TopicArn": "arn:aws:sns:us-east-1:294826912937:4-pl-devices-sv-table-not-found-dev",
+                "Message": {
+                  "message": "ingresos Not Found"
+                }
+              },
+              "Next": "Fail 8"
+            },
+            "Wait 8": {
+              "Type": "Wait",
+              "Seconds": 1800,
+              "Next": "8th-lmd-sv-4-pl-devices-verify-data-availability-dev"
+            },
+            "glu_sv_scpro_4_pl_ingresos_raw_to_std_dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "glu_sv_scpro_4_pl_ingresos_raw_to_std_dev"
+              },
+              "Next": "Success 8"
+            },
+            "Success 8": {
+              "Type": "Succeed"
+            },
+            "SNS Publish - Email Alarm 8": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "TopicArn": "arn:aws:sns:us-east-1:294826912937:4-pl-devices-sv-stf-logging-error-dev",
+                "Message.$": "$"
+              },
+              "Next": "Wait 8"
+            }
+          }
+        }
+      ],
+      "Next": "jobs_std_to_anl"
+    },
+    "jobs_std_to_anl": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "glu_sv_scpro_4_pl_devices_activaciones_diarias_std_to_anl_dev",
+          "States": {
+            "glu_sv_scpro_4_pl_devices_activaciones_diarias_std_to_anl_dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": " glu_sv_scpro_4_pl_devices_activaciones_diarias_std_to_anl_dev"
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "glu_sv_scpro_4_pl_devices_inventario_std_to_anl_dev",
+          "States": {
+            "glu_sv_scpro_4_pl_devices_inventario_std_to_anl_dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": " glu_sv_scpro_4_pl_devices_inventario_std_to_anl_dev"
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "glu_sv_scpro_4_pl_devices_facturacion_comercial_std_to_anl_dev",
+          "States": {
+            "glu_sv_scpro_4_pl_devices_facturacion_comercial_std_to_anl_dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "glu_sv_scpro_4_pl_devices_facturacion_comercial_std_to_anl_dev"
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "glu_sv_scpro_4_pl_devices_facturacion_dealers_std_to_anl_dev",
+          "States": {
+            "glu_sv_scpro_4_pl_devices_facturacion_dealers_std_to_anl_dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "glu_sv_scpro_4_pl_devices_facturacion_dealers_std_to_anl_dev"
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "glu_sv_scpro_4_pl_devices_libre_utilizacion_std_to_anl_dev",
+          "States": {
+            "glu_sv_scpro_4_pl_devices_libre_utilizacion_std_to_anl_dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "glu_sv_scpro_4_pl_devices_libre_utilizacion_std_to_anl_dev"
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "glu_sv_scpro_4_pl_devices_traslados_confirmados_std_to_anl_dev",
+          "States": {
+            "glu_sv_scpro_4_pl_devices_traslados_confirmados_std_to_anl_dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "glu_sv_scpro_4_pl_devices_traslados_confirmados_std_to_anl_dev"
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "glu_sv_scpro_4_pl_devices_traslados_pendientes_std_to_anl_dev",
+          "States": {
+            "glu_sv_scpro_4_pl_devices_traslados_pendientes_std_to_anl_dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": " glu_sv_scpro_4_pl_devices_traslados_pendientes_std_to_anl_dev"
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "glu_sv_scpro_4_pl_ingresos_std_to_anl_dev",
+          "States": {
+            "glu_sv_scpro_4_pl_ingresos_std_to_anl_dev": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "glu_sv_scpro_4_pl_ingresos_std_to_anl_dev"
+              },
+              "End": true
+            }
+          }
+        }
+      ],
+      "Next": "run-cwlr-sv-scpro-4-pl-devices-dev"
+    },
+    "run-cwlr-sv-scpro-4-pl-devices-dev": {
+      "Type": "Task",
+      "Parameters": {
+        "Name": "cwlr-sv-scpro-4-pl-devices-dev"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+      "Next": "GetCrawler"
+    },
+    "GetCrawler": {
+      "Type": "Task",
+      "Parameters": {
+        "Name": "cwlr-sv-scpro-4-pl-devices-dev"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:glue:getCrawler",
+      "Next": "Is Running?"
+    },
+    "Is Running?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.Crawler.State",
+          "StringEquals": "RUNNING",
+          "Next": "Wait for crawler to complete"
+        }
+      ],
+      "Default": "Pass"
+    },
+    "Wait for crawler to complete": {
+      "Type": "Wait",
+      "Seconds": 20,
+      "Next": "GetCrawler"
+    },
+    "Pass": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}
