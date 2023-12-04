@@ -1,4 +1,7 @@
-# README.md for #lakeH Terraform and AWS Glue Script
+# lakeH Terraform and AWS Glue Script
+
+![image](https://github.com/simonbustamante/aws-sns-notifications-workflow/assets/31484503/089ad250-ad72-42ad-9005-e5068b97f760)
+
 
 ## Overview
 This README provides an overview of the Terraform configuration and AWS Glue scripts used for the #lakeH project. It includes setup for AWS resources, step functions, SNS topics, email subscriptions, and AWS Glue jobs for data processing.
